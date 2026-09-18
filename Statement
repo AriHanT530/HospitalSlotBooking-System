@@ -1,0 +1,108 @@
+# Problem Statement
+
+## The problem
+
+Most small and mid-sized hospitals and clinics in India still run outpatient
+appointments through a paper register or a shared spreadsheet at the front
+desk. That arrangement fails in four predictable ways:
+
+1. **Double booking.** Two receptionists, or a receptionist and a phone call,
+   promise the same 10:30 slot to two different patients. Nothing in a paper
+   register prevents it, and the clash is only discovered in the waiting room.
+2. **Stale availability.** A cancellation is noted in the margin, if at all.
+   The freed slot is never offered to the next patient, so the doctor sits
+   idle while people are turned away.
+3. **No record trail.** There is no reliable answer to "what was prescribed
+   last visit?", "how many consultations did Dr. Rao complete in March?", or
+   "which specialization is over-subscribed?" without manual counting.
+4. **No accountability.** Nobody can say who cancelled a booking, when, or
+   whether the late-cancellation charge was applied.
+
+The common thread is that a *slot* — a doctor's time between 10:30 and 11:00
+on a particular date — is a shared resource being allocated with no mechanism
+to guarantee it is allocated exactly once.
+
+## Proposed solution
+
+A role-based console application that treats the slot as the central
+resource and makes single-allocation a hard guarantee of the system rather
+than a matter of front-desk discipline.
+
+Each doctor is defined by a working window and a consultation length; the
+system derives the slot grid for any date from those two values. A booking
+request must pass five checks — the time must be a real slot on the grid, it
+must be in the future, the doctor must be free, the patient must not be
+committed elsewhere at that moment, and the patient must be within the
+fair-use cap — and all five run inside a lock held on that doctor. The
+concurrency test in the repository starts 25 threads on the same slot at the
+same instant and asserts that exactly one succeeds.
+
+Around that core sit user management with hashed credentials and role-based
+menus, a prescription record attached to completed consultations, and an
+analytics layer that answers the reporting questions from stored data rather
+than from manual counting. Every state change is written to an append-only
+log file.
+
+## Scope
+
+**In scope**
+
+- Registration and authentication for three roles: Administrator, Doctor, Patient
+- Doctor onboarding with specialization, fee, room, working hours, slot length
+- Slot-grid generation, availability display, next-free-date suggestion
+- Conflict-free booking, cancellation with a late-cancellation charge rule,
+  rescheduling with automatic rollback on failure
+- Prescription issue and retrieval against completed consultations
+- Analytics: status breakdown, revenue by doctor, demand by specialization,
+  daily load, top doctors, cancellation rate
+- CSV export of the appointment book
+- Background reminder and auto-expiry workers
+- File-based persistence with an optional JDBC backend behind the same interface
+- An automated validation suite covering business rules and the concurrency
+  guarantee
+
+**Out of scope** (deliberate, so the in-scope work is done properly)
+
+- Graphical or web interface — the project is a console application
+- Real payment gateway integration; billing is computed, not collected
+- SMS or email delivery; reminders are written to the log file, with the
+  notification hook left as an extension point
+- Insurance claims, pharmacy stock, lab orders, in-patient/ward management
+- Multi-hospital or multi-branch deployment
+- Network access; the application is single-node
+
+## Target users
+
+| User | What they need from the system |
+|---|---|
+| **Patient** (outpatient, any age group) | See which doctor is free and when, book without a phone call or a queue, cancel or move an appointment, look back at what was prescribed |
+| **Doctor** | A clean view of the day's schedule with patient names and stated reasons, one action to close a consultation, a place to record diagnosis and medicines, a summary of work done |
+| **Hospital administrator / front desk** | Onboard and deactivate doctors, see the whole day at a glance, answer load and revenue questions from data, export for accounts, audit who did what |
+
+The secondary audience is the course evaluator, for whom the code is written
+to be readable: each syllabus concept appears where it is genuinely needed
+rather than bolted on, and the README maps units to the classes that use them.
+
+## High-level features
+
+1. **User management** — self-registration for patients, admin-driven
+   onboarding for doctors, salted SHA-256 credentials, login attempt limiting,
+   account enable/disable, password change.
+
+2. **Slot and booking engine** — grid derived from each doctor's working
+   window, FREE/BOOKED/ELAPSED display, five-rule booking validation under a
+   per-doctor lock, next-free-date suggestion, cancellation with a two-hour
+   late-cancel rule, rescheduling that rolls back if the new slot cannot be
+   taken.
+
+3. **Records and analytics** — prescriptions with diagnosis, medicine list and
+   advice; revenue, load, demand and cancellation-rate reports built over the
+   Collections framework; CSV export; an append-only audit log.
+
+4. **Background processing** — a reminder daemon (extends `Thread`) for
+   appointments due within 24 hours and an auto-expiry worker (implements
+   `Runnable`) that closes slots which elapsed while still booked.
+
+5. **Pluggable storage** — every service depends on `Repository<T>`, with a
+   file implementation used by default and a JDBC implementation configured
+   externally, so neither the services nor the UI change when the backend does.
