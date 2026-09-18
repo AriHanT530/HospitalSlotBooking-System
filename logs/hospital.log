@@ -1,0 +1,22 @@
+2026-09-18 16:42:14 [INFO ] [main] Web application starting (Java 27)
+2026-09-18 16:42:14 [INFO ] [main] JDBC disabled - running on CSV storage
+2026-09-18 16:42:14 [AUDIT] [main] REGISTER admin ADM0001
+2026-09-18 16:42:14 [AUDIT] [main] REGISTER doctor DOC0001 (dr.mehta)
+2026-09-18 16:42:14 [AUDIT] [main] REGISTER doctor DOC0002 (dr.rao)
+2026-09-18 16:42:14 [AUDIT] [main] REGISTER doctor DOC0003 (dr.khan)
+2026-09-18 16:42:14 [AUDIT] [main] REGISTER doctor DOC0004 (dr.nair)
+2026-09-18 16:42:14 [AUDIT] [main] REGISTER patient PAT0001 (arjun)
+2026-09-18 16:42:14 [AUDIT] [main] REGISTER patient PAT0002 (priya)
+2026-09-18 16:42:14 [AUDIT] [main] REGISTER patient PAT0003 (kabir)
+2026-09-18 16:42:14 [INFO ] [main] Seed data created (1 admin, 4 doctors, 3 patients)
+2026-09-18 16:42:14 [INFO ] [reminder-daemon] Reminder daemon started (every 60s, window 24h)
+2026-09-18 16:42:14 [INFO ] [main] Web server listening on http://localhost:8080
+2026-09-18 17:15:23 [AUDIT] [pool-1-thread-4] REGISTER patient PAT0004 (ranajas_1406)
+2026-09-18 17:15:46 [AUDIT] [pool-1-thread-4] LOGIN PAT0004 as PATIENT
+2026-09-18 17:16:14 [AUDIT] [pool-1-thread-4] BOOK APT0001 patient=PAT0004 doctor=DOC0003 at 2026-09-19 09:50
+2026-09-18 17:16:45 [INFO ] [reminder-daemon] REMINDER APT0001 -> patient jasmine rana at 2026-09-19 09:50 (in 16h)
+2026-09-18 17:16:45 [INFO ] [reminder-daemon] Reminder cycle 28: 1 reminder(s) queued
+2026-09-18 17:17:45 [INFO ] [reminder-daemon] REMINDER APT0001 -> patient jasmine rana at 2026-09-19 09:50 (in 16h)
+2026-09-18 17:17:45 [INFO ] [reminder-daemon] Reminder cycle 29: 1 reminder(s) queued
+2026-09-18 17:18:20 [INFO ] [shutdown-hook] Application shutdown complete
+2026-09-18 17:18:20 [INFO ] [reminder-daemon] Reminder daemon stopped after 29 cycle(s)

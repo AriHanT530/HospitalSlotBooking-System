@@ -1,0 +1,10 @@
+# id|role|username|passwordHash|fullName|phone|active|f1|f2|f3|f4|f5|f6|f7
+ADM0001|ADMIN|admin|VQSaQnP/krPk501epjblaw==:CAioM+ghWxxtImdMsvaURE0PifqasthD2uXW+CQWn1U=|Ramesh Iyer|9812345670|true|Hospital Administrator||||||
+DOC0001|DOCTOR|dr.mehta|piWvl/IWFcfNWk1/J7CB8Q==:yb92P3E7DNMQVvUnQZuMhSOByD6u15X97YmYXxka7Xs=|Anita Mehta|9812345671|true|CARDIOLOGY|800.0|C-201|09:00|13:00|30|
+DOC0002|DOCTOR|dr.rao|Em0LhBCItzr3CxpE6ZUdqw==:v3PQARzUa6jbtuX4KlVjPmxovFDB4bXBJtKKOCf3Rrg=|Sunil Rao|9812345672|true|ORTHOPAEDICS|650.0|B-104|10:00|16:00|30|
+DOC0003|DOCTOR|dr.khan|lEz10kQeJg9PAdffZzL2fw==:HZF4n7u0gVBY+KzcrmdRgokqpkI28A1xTnMVETBi11s=|Farah Khan|9812345673|true|PAEDIATRICS|500.0|A-012|09:30|14:30|20|
+DOC0004|DOCTOR|dr.nair|Pg5cAtATN9Ay7wjK0gZy/g==:FMJJb0PZplV2Of9MDRxo+HZa1exzBmHlmH1qSsV+Tyo=|Vishal Nair|9812345674|true|GENERAL|300.0|A-001|08:00|12:00|15|
+PAT0001|PATIENT|arjun|eo3Y6WbAmcbPHYK1XrGDhQ==:snOr2mpD++ricce+Prztc81sW8MPsre4ca9fpWpHuoo=|Arjun Sharma|9876543210|true|24|M|O+||||
+PAT0002|PATIENT|priya|Ahxu4LFYu1uB7jsvHcEDpw==:HuTwrZipaX/shtE3Ywn3wYf1VJVwkEdxtlTPBw+mVmc=|Priya Verma|9876543211|true|31|F|B+||||
+PAT0003|PATIENT|kabir|SwQfVvCPeWgoqctwCZ8jdA==:Nl0X4zAPiFBLzMR/wXOkyqEh+f/r4+JWEVsqbHh4vS0=|Kabir Singh|9876543212|true|45|M|A+||||
+PAT0004|PATIENT|ranajas_1406|r7quKOylRijeggEjO1bapA==:dnwe2kq0kM7uDo+dGnwTzHQfQy72w91PQ605+tjro9E=|jasmine rana|9817193931|true|20|F|A||||

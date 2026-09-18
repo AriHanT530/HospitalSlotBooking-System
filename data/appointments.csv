@@ -1,0 +1,2 @@
+# id|patientId|doctorId|date|startTime|endTime|status|fee|reason|createdAt
+APT0001|PAT0004|DOC0003|2026-09-19|09:50|10:10|BOOKED|500.0|delayed periods|2026-09-18T17:16:14.435576

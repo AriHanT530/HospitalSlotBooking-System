@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------------------
+# Optional JDBC configuration (Unit 5).
+#
+# The application runs completely on file storage with no third-party jars.
+# Copy this file to config/db.properties and set db.enabled=true only if you
+# want to demonstrate the JDBC path. Drop the driver jar into lib/ and add it
+# to the classpath when running.
+#
+# The point of keeping this outside the source is the syllabus requirement
+# "specifying JDBC driver information externally".
+# ---------------------------------------------------------------------------
+
+db.enabled=false
+
+# --- MySQL example ---
+# db.driver=com.mysql.cj.jdbc.Driver
+# db.url=jdbc:mysql://localhost:3306/hospital?useSSL=false&serverTimezone=UTC
+# db.user=root
+# db.password=changeme
+
+# --- PostgreSQL example ---
+# db.driver=org.postgresql.Driver
+# db.url=jdbc:postgresql://localhost:5432/hospital
+# db.user=postgres
+# db.password=changeme
+
+# --- SQLite example (file database, no server needed) ---
+# db.driver=org.sqlite.JDBC
+# db.url=jdbc:sqlite:data/hospital.db
+# db.user=
+# db.password=
