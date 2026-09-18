@@ -1,0 +1,275 @@
+# Hospital Appointment & Slot Booking System
+
+A hospital appointment manager written in pure Java, built for
+**CSE2006 – Programming in Java** (VITyarthi *Build Your Own Project*).
+It ships with **two front ends over one shared backend**: the original
+console UI, and a browser UI served by the JDK's own `com.sun.net.httpserver`
+— no framework, no external jar, no application server.
+
+The system lets patients find a doctor, see a live slot grid and book a
+consultation; lets doctors run their day and issue prescriptions; and gives
+the administrator oversight and analytics over the whole appointment book.
+Two background threads handle reminders and stale-slot cleanup.
+
+```
+        ┌────────────────┐        ┌────────────────┐
+        │  Console UI    │        │  Browser UI     │
+        │  com.hospital.ui│       │  com.hospital.web│
+        └───────┬────────┘        └────────┬────────┘
+                └──────────────┬───────────┘
+                     ServiceRegistry (shared)
+                AuthService · SlotService · BookingService
+                PrescriptionService · ReportService
+                     Repository<T> (CSV or JDBC)
+```
+
+Both entry points build the exact same `ServiceRegistry`. Booking rules,
+the per-doctor lock, validation, persistence and the two background threads
+are identical either way — only how a person reaches them differs.
+
+---
+
+## Overview
+
+Walk-in hospital desks lose time to a manual register: the same slot gets
+promised twice, cancellations are never reflected, and nobody can answer
+"how busy was Dr. Mehta last week?" without counting by hand. This project
+replaces that register with a role-based system where a slot can be held by
+exactly one patient at a time — a guarantee that is enforced with thread
+synchronization and proved by an automated 25-thread race test.
+
+**Three major functional modules**
+
+| # | Module | What it does |
+|---|--------|--------------|
+| 1 | **User Management** | Self-registration, salted-hash login, three roles, account enable/disable, password change |
+| 2 | **Slot & Booking Engine** | Slot-grid generation from each doctor's working window, conflict-free booking, cancellation with late-cancel billing, rescheduling with rollback |
+| 3 | **Records & Analytics** | Prescriptions against completed consultations, revenue/load/demand dashboards, CSV export, file-based audit log |
+
+---
+
+## Features
+
+**Patient**
+- Browse doctors, filter by specialization
+- View the full slot grid for any date (FREE / BOOKED / ELAPSED)
+- Book a slot, with the next free date suggested when a day is full
+- Cancel (free up to 2 hours before, 50% charged after) and reschedule
+- View appointment history and prescriptions
+
+**Doctor**
+- Today's schedule or any chosen date, with occupancy percentage
+- Mark a consultation completed
+- Issue a prescription (diagnosis, medicine list, advice)
+- Cancel an appointment on the patient's behalf
+- Earnings summary, split by realised and gross billable
+
+**Administrator**
+- Onboard doctors with specialization, fee, room, working hours, slot length
+- List and enable/disable any account
+- View every appointment for a date
+- Analytics dashboard: status breakdown, revenue by doctor, demand by
+  specialization, daily load histogram, top doctors, cancellation rate
+- Export the appointment book to `reports/appointments_<date>.csv`
+- Tail the system log
+
+**Running in the background**
+- `reminder-daemon` — extends `Thread`, wakes every 60s, logs reminders for
+  appointments starting within 24 hours
+- `auto-expiry` — implements `Runnable`, closes slots that elapsed while
+  still `BOOKED` so reports stay honest
+
+---
+
+## Technologies & tools used
+
+| Area | Choice |
+|---|---|
+| Language | Java 17+ (developed and tested on OpenJDK 21) |
+| External libraries | **None** — standard library only |
+| Persistence | Pipe-delimited files under `data/`, plus an optional JDBC backend |
+| Concurrency | `Thread`, `Runnable`, `synchronized`, `volatile`, `ConcurrentHashMap`, `AtomicInteger`, `CountDownLatch` |
+| Security | Salted SHA-256 via `java.security.MessageDigest` |
+| Testing | A hand-written assertion harness (`MiniTest`) — 64 assertions, no JUnit jar required |
+| Version control | Git |
+
+### Syllabus coverage
+
+| Unit | Where it appears |
+|---|---|
+| 1 — Flow control, I/O | Menu loops, `switch`, validation branches, console `Reader` |
+| 2 — OOP | `User` → `Patient`/`Doctor`/`Admin`; abstract `CsvRepository` and `RoleMenu` (template method); `Billable` interface with a default method; enums with constructors; `AppLogger` singleton; `instanceof` mapping; reflection in `Class.forName` driver loading |
+| 3 — Exceptions & threads | `HospitalException` hierarchy with error codes and chaining; `ReminderDaemon` (extends Thread) and `AutoExpiryWorker` (implements Runnable); per-doctor `synchronized` booking |
+| 4 — Collections & streams | `List`, `Map`, `TreeMap`, `EnumMap`, `Comparator` sorting; `BufferedReader`/`BufferedWriter`/`PrintWriter` for data files, logs and reports |
+| 5 — JDBC | `DatabaseManager` (external `db.properties`, `DriverManager`, DDL) and `JdbcAppointmentRepository` (`PreparedStatement`, `ResultSet`, try-with-resources) implementing the same `Repository<Appointment>` contract |
+
+---
+
+## Project structure
+
+```
+HospitalSlotBooking/
+├── src/com/hospital/
+│   ├── Main.java                  console entry point, shutdown hook
+│   ├── model/                     User, Patient, Doctor, Admin, Appointment,
+│   │                              Slot, Prescription, Billable, 3 enums
+│   ├── dao/                       Repository<T>, CsvRepository<T>, User/Appointment/
+│   │                              Prescription repositories, DatabaseManager,
+│   │                              JdbcAppointmentRepository
+│   ├── service/                   AuthService, SlotService, BookingService,
+│   │                              PrescriptionService, ReportService,
+│   │                              ServiceRegistry, DataSeeder
+│   ├── concurrent/                ReminderDaemon, AutoExpiryWorker
+│   ├── exception/                 HospitalException + 5 specific types
+│   ├── ui/                        ConsoleApp, RoleMenu, Admin/Doctor/PatientMenu
+│   ├── web/                       WebMain, WebServer, SessionManager, Html, WebUtil
+│   │                              (browser front end — built on the JDK's own
+│   │                               com.sun.net.httpserver, zero extra jars)
+│   └── util/                      AppLogger, PasswordUtil, IdGenerator,
+│                                  Validator, CsvUtil, ConsoleInput, TableFormatter
+├── test/com/hospital/test/        MiniTest, TestRunner (64 assertions)
+├── docs/                          ARCHITECTURE.md, REPORT_GUIDE.md
+├── config/db.properties.example   optional JDBC settings
+├── build.sh · run.sh · run_web.sh · run_tests.sh · run.bat · run_web.bat
+├── README.md · statement.md
+└── data/ · logs/ · reports/       created at runtime
+```
+
+50 source files across 8 packages.
+
+### How the web layer is built
+
+- `WebServer` routes every request to the same `ServiceRegistry` the console
+  uses — one method per screen (e.g. `patientSlots`, `doBook`, `adminAnalytics`).
+- `Html` renders pages with plain `String` building (no template engine),
+  escaping every user-supplied value before it goes into the page.
+- `SessionManager` keeps a `ConcurrentHashMap<token, User>` and a login cookie
+  — no external session library needed.
+- Every page is server-rendered HTML with plain HTML forms; a POST is
+  followed by a redirect (the same pattern any Servlet-based app uses), so
+  refreshing a page never re-submits a booking.
+- Business-rule failures (a `HospitalException`) are caught centrally in the
+  router and turned into a flash message on the page the user came from —
+  the browser never sees a raw stack trace.
+
+---
+
+## Install & run
+
+**Requirement:** JDK 17 or newer (`java -version` to check). Nothing else —
+the web front end below needs no extra dependency either; `HttpServer` is
+part of the standard JDK.
+
+### Option A — Browser UI (recommended for a demo)
+
+```bash
+git clone <your-repo-url>
+cd HospitalSlotBooking
+./run_web.sh          # starts on http://localhost:8080
+```
+
+Windows: `run_web.bat`. Pick a different port with `./run_web.sh 9090`.
+Open the printed URL in any browser. Stop with `Ctrl+C`.
+
+### Option B — Console UI
+
+```bash
+./run.sh
+```
+
+Windows: `run.bat`. Add `--verbose` to mirror log lines to the console:
+`./run.sh --verbose`.
+
+### Manual build (either front end)
+
+```bash
+mkdir -p out
+find src test -name "*.java" > .sources
+javac -d out @.sources
+java -cp out com.hospital.Main          # console
+java -cp out com.hospital.web.WebMain   # browser, port 8080
+```
+
+Both front ends read and write the same `data/` folder, so you can switch
+between them freely — a booking made in the browser shows up in the console
+app and vice versa.
+
+### Demo accounts (created automatically on first run)
+
+| Role | Username | Password |
+|---|---|---|
+| Admin | `admin` | `admin123` |
+| Doctor | `dr.mehta` (Cardiology) | `doctor123` |
+| Doctor | `dr.rao` (Orthopaedics) | `doctor123` |
+| Doctor | `dr.khan` (Paediatrics) | `doctor123` |
+| Doctor | `dr.nair` (General) | `doctor123` |
+| Patient | `arjun` / `priya` / `kabir` | `patient123` |
+
+Delete the `data/` folder to reset to a clean state.
+
+### Optional: switch on the JDBC backend
+
+```bash
+cp config/db.properties.example config/db.properties
+# edit: set db.enabled=true, fill in driver, url, user, password
+# place the driver jar in lib/
+java -cp "out:lib/*" com.hospital.Main
+```
+
+With no `db.properties` the application logs a line and stays on file
+storage, so it always runs on a bare JDK.
+
+---
+
+## Testing
+
+```bash
+./run_tests.sh
+```
+
+The suite runs inside `build/testrun`, so your real `data/` folder is never
+touched. Expected output ends with:
+
+```
+  RESULT: 64 passed, 0 failed
+```
+
+What it covers:
+
+| Suite | Assertions |
+|---|---|
+| Input validation | Names, phones, ages, passwords, past/far-future dates |
+| Password hashing | Plain text absent, verify/reject, per-hash salting, malformed input |
+| CSV encoding | Pipes inside values escape and round-trip |
+| Slot generation | Slot counts, boundaries, partial trailing slots dropped |
+| Booking happy path | Status, fee copy, end-time arithmetic, id format, slot consumed |
+| Booking rejections | Double booking, past slot, off-grid time, outside hours, patient clash |
+| **Concurrency** | **25 threads race one slot → exactly 1 wins, 24 rejected, 1 row stored** |
+| Cancellation & billing | Early vs late cancel, slot release, no-show 50%, tax, double-cancel, wrong user |
+| Consultation flow | Prescribe-before-complete blocked, duplicate blocked, list immutability |
+| Reporting | Status coverage, revenue sort order, rate bounds, export file contents |
+| Background workers | Thread state NEW → alive → terminated, daemon flag, cycle count |
+
+The concurrency test is the one worth watching: remove the `synchronized`
+block in `BookingService.book()` and it starts failing intermittently.
+
+---
+
+## Design notes
+
+- **Service layer talks only to `Repository<T>`.** That is why the JDBC
+  implementation can replace the CSV one without a single service change.
+- **Locks are per doctor, not global.** Two patients booking different
+  doctors never block each other; two patients booking the same doctor are
+  serialised. The lock objects live in a `ConcurrentHashMap`.
+- **Every check that could reject a booking happens inside the lock.**
+  Validating first and writing later would leave a gap another thread could
+  use.
+- **Reschedule rolls back.** The old slot is released first so the new
+  booking can reuse it; if the new booking fails for any reason, the original
+  is restored to `BOOKED`.
+- **Slots are computed, never stored.** Changing a doctor's hours takes
+  effect immediately for every future date.
+- **A corrupt data row is skipped and logged**, not fatal.
+
+---
